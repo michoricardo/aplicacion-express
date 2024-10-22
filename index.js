@@ -1,15 +1,14 @@
-//Importamos las librarías requeridas
-const express = require('express')
-const bodyParser = require('body-parser')
+// Importamos las librerías requeridas
+const express = require('express');
+const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 
-//Documentación en https://expressjs.com/en/starter/hello-world.html
-const app = express()
+// Documentación en https://expressjs.com/en/starter/hello-world.html
+const app = express();
 
-//Creamos un parser de tipo application/json
-//Documentación en https://expressjs.com/en/resources/middleware/body-parser.html
-const jsonParser = bodyParser.json()
-
+// Creamos un parser de tipo application/json
+// Documentación en https://expressjs.com/en/resources/middleware/body-parser.html
+const jsonParser = bodyParser.json();
 
 // Abre la base de datos de SQLite
 let db = new sqlite3.Database('./base.sqlite3', (err) => {
@@ -26,66 +25,52 @@ let db = new sqlite3.Database('./base.sqlite3', (err) => {
         if (err) {
             console.error(err.message);
         } else {
-            console.log('Tabla tareas creada o ya existente.');
+            console.log('Tabla "todos" creada o ya existente.');
         }
     });
 });
 
-//Creamos un endpoint de login que recibe los datos como json
-app.post('/insert', jsonParser, function (req, res) {
-    //Imprimimos el contenido del campo todo
+// Creamos un endpoint para agregar un todo que recibe los datos como JSON
+app.post('/agrega_todo', jsonParser, function (req, res) {
     const { todo } = req.body;
-   
-    console.log(todo);
-    res.setHeader('Content-Type', 'application/json');
-    
 
     if (!todo) {
         res.status(400).send('Falta información necesaria');
         return;
     }
-    const stmt  =  db.prepare('INSERT INTO todos (todo, created_at) VALUES (?, CURRENT_TIMESTAMP)');
 
-    stmt.run(todo, (err) => {
+    const createdAt = Math.floor(Date.now() / 1000); // Unix timestamp
+    const stmt = db.prepare('INSERT INTO todos (todo, created_at) VALUES (?, ?)');
+
+    stmt.run(todo, createdAt, function(err) {
         if (err) {
-          console.error("Error running stmt:", err);
-          res.status(500).send(err);
-          return;
-
-        } else {
-          console.log("Insert was successful!");
+            console.error("Error al ejecutar el statement:", err);
+            res.status(500).send(err.message);
+            return;
         }
+        console.log("Inserción exitosa!");
+        res.status(201).json({ id: this.lastID, todo, created_at: createdAt });
     });
 
     stmt.finalize();
-    
-    //Enviamos de regreso la respuesta
-    res.setHeader('Content-Type', 'application/json');
-    res.status(201).send();
-})
+});
 
-
-
+// Ruta principal
 app.get('/', function (req, res) {
-    //Enviamos de regreso la respuesta
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ 'status': 'ok2' }));
-})
-
-
-//Creamos un endpoint de login que recibe los datos como json
-app.post('/login', jsonParser, function (req, res) {
-    //Imprimimos el contenido del body
-    console.log(req.body);
-
-    //Enviamos de regreso la respuesta
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ 'status': 'ok' }));
-})
+});
 
-//Corremos el servidor en el puerto 3000
+// Creamos un endpoint de login que recibe los datos como JSON
+app.post('/login', jsonParser, function (req, res) {
+    console.log(req.body);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ 'status': 'ok' }));
+});
+
+// Corremos el servidor en el puerto 3000
 const port = 3000;
 
 app.listen(port, () => {
-    console.log(`Aplicación corriendo en http://localhost:${port}`)
-})
+    console.log(`Aplicación corriendo en http://localhost:${port}`);
+});
