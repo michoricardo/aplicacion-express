@@ -68,9 +68,30 @@ app.post('/login', jsonParser, function (req, res) {
     res.end(JSON.stringify({ 'status': 'ok' }));
 });
 
+// Función para probar la petición POST y mostrar una alerta en la consola
+async function testPostRequest() {
+    const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+    const response = await fetch('http://localhost:3000/agrega_todo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ todo: 'Prueba de todo' })
+    });
+
+    if (response.status === 201) {
+        console.log('¡Agregastessss el todo exitosamente');
+    } else {
+        console.error('Error al agregar el todo');
+    }
+}
+
 // Corremos el servidor en el puerto 3000
 const port = 3000;
 
 app.listen(port, () => {
     console.log(`Aplicación corriendo en http://localhost:${port}`);
+    // Llamamos a la función de prueba después de que el servidor esté corriendo
+    testPostRequest();
 });
