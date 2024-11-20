@@ -1,14 +1,12 @@
-// Importamos las librerías requeridas
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
+const cors = require('cors'); // Importa cors
 
-// Documentación en https://expressjs.com/en/starter/hello-world.html
 const app = express();
-
-// Creamos un parser de tipo application/json
-// Documentación en https://expressjs.com/en/resources/middleware/body-parser.html
 const jsonParser = bodyParser.json();
+
+app.use(cors()); // Usa cors
 
 // Abre la base de datos de SQLite
 let db = new sqlite3.Database('./base.sqlite3', (err) => {
@@ -30,7 +28,7 @@ let db = new sqlite3.Database('./base.sqlite3', (err) => {
     });
 });
 
-// Creamos un endpoint para agregar un todo que recibe los datos como JSON
+// Endpoint para agregar un todo
 app.post('/agrega_todo', jsonParser, function (req, res) {
     const { todo } = req.body;
 
@@ -55,20 +53,33 @@ app.post('/agrega_todo', jsonParser, function (req, res) {
     stmt.finalize();
 });
 
+// Endpoint para obtener la lista de todos
+app.get('/todos', function (req, res) {
+    const sql = 'SELECT * FROM todos';
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send(err.message);
+            return;
+        }
+        res.json(rows);
+    });
+});
+
 // Ruta principal
 app.get('/', function (req, res) {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ 'status': 'ok' }));
 });
 
-// Creamos un endpoint de login que recibe los datos como JSON
+// Endpoint de login
 app.post('/login', jsonParser, function (req, res) {
     console.log(req.body);
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ 'status': 'ok' }));
 });
 
-// Función para probar la petición POST y mostrar una alerta en la consola
+// Función para probar la petición POST
 async function testPostRequest() {
     const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
@@ -81,7 +92,7 @@ async function testPostRequest() {
     });
 
     if (response.status === 201) {
-        console.log('¡Agregastessss el todo exitosamente');
+        console.log('¡Agregaste el todo exitosamente!');
     } else {
         console.error('Error al agregar el todo');
     }
